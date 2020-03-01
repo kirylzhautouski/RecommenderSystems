@@ -1,0 +1,4 @@
+[flake8]
+filename = *.py
+max-complexity = 10
+max-line-length = 120
