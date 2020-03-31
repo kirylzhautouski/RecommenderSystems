@@ -1,4 +1,5 @@
+from models.utils import Dataset
 
 
 if __name__ == '__main__':
-    print('Hello, World!')
+    dataset = Dataset.from_csv_file('data/ratings.csv')
