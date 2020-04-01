@@ -35,20 +35,28 @@ class Dataset:
                                              trainset_ratings_count)
         indexes_for_trainset.sort()
 
-        trainset_ratings = []
-        testset_ratings = []
+        trainset_ratings = [None] * trainset_ratings_count
+        testset_ratings = [None] * (ratings_count - trainset_ratings_count)
 
+        trainset_index, testset_index = 0, 0
         for i, index_for_trainset in enumerate(indexes_for_trainset):
-            trainset_ratings.append(self._ratings[index_for_trainset])
+            trainset_ratings[trainset_index] = self._ratings[index_for_trainset]
+            trainset_index += 1
 
             testset_slice = None
+            items_count = 0
             if i != trainset_ratings_count - 1:
                 testset_slice = slice(index_for_trainset + 1,
                                       indexes_for_trainset[i + 1])
+                items_count = indexes_for_trainset[i + 1] - \
+                    (index_for_trainset + 1)
             else:
                 testset_slice = slice(index_for_trainset + 1, ratings_count)
+                items_count = ratings_count - (index_for_trainset + 1)
 
-            testset_ratings.extend(self._ratings[testset_slice])
+            testset_ratings[testset_index:testset_index + items_count] = \
+                self._ratings[testset_slice]
+            testset_index += items_count
 
         return Trainset.build_from_ratings(trainset_ratings), testset_ratings
 
