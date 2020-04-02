@@ -1,3 +1,5 @@
+import heapq
+
 import numpy as np
 
 
@@ -57,6 +59,10 @@ class UnfittedModelError(Exception):
     pass
 
 
+class NotEnoughNeighbours(Exception):
+    pass
+
+
 class KNN:
     def fit(self, trainset, options=None):
         '''
@@ -76,12 +82,33 @@ class KNN:
         'rating_prediction' = {'average'|'weighted_average'}
 
         'similarity_on' = {'user_based'|'item_based'}
+
+        'k' = `int`, default=30
         '''
-        self.sim = SimilarityMetrics.cosine(trainset.items_ratings, trainset.users_count)
+        self._k = 30
+
+        self._trainset = trainset
+
+        self._sim = SimilarityMetrics.cosine(trainset.items_ratings, trainset.users_count)
 
     def predict(self, user_id, item_id):
+        inner_user_id = self._trainset.to_inner_user_id(user_id)
+        inner_item_id = self._trainset.to_inner_item_id(item_id)
+
         try:
-            print(self.sim)
+            neighbours_similarities = self._sim[inner_user_id]
         except AttributeError:
             raise UnfittedModelError('You should first call KNN.fit() method '
                                      'to prepare model')
+
+        # find k most similar users to inner_user_id
+        # find average for theirs ratings to the item_id
+        ratings_for_item = self._trainset.items_ratings[inner_item_id]
+        neighbours = [(rating, neighbours_similarities[neighbour_id])
+                      for neighbour_id, rating in ratings_for_item]
+
+        k_nearest_neighbours = heapq.nlargest(self._k, neighbours, lambda x: x[1])
+        if len(k_nearest_neighbours) != self._k:
+            raise NotEnoughNeighbours(f'There are less than {self._k} neighbours')
+
+        return np.average(list(map(lambda x: x[0], k_nearest_neighbours)))

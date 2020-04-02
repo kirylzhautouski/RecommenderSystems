@@ -9,4 +9,4 @@ if __name__ == '__main__':
 
     knn = KNN()
     knn.fit(trainset)
-    knn.predict(1, 1)
+    print(knn.predict(1, 1))
