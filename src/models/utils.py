@@ -11,6 +11,7 @@ class Dataset:
         get train sets and sets for tests
 
         Arguments:
+
         `ratings` -- list of tuples (user_id, item_id, rating)
         """
         self._ratings = ratings
@@ -78,10 +79,16 @@ class Trainset:
         Constructs `Trainset`, that is used for training model
 
         Arguments:
+
         `users_ratings` -- dict where key is a user_id and value is a list of
         tuples (item_id, rating)
+
         `items_ratings` -- dict where key is an item_id and value is a list of
         tuples (user_id, rating)
+
+        `original_to_inner_users` -- dict, map from original user ids to inner ones
+
+        `original_to_inner_items` -- dict, map from original item ids to inner ones
         """
         self._users_ratings = users_ratings
         self._items_ratings = items_ratings
