@@ -26,6 +26,10 @@ class Dataset:
 
         return cls(ratings)
 
+    @property
+    def ratings(self):
+        return self._ratings
+
     def split_into_train_and_test_sets(self, train_share, random_state=1):
         ratings_count = len(self._ratings)
         trainset_ratings_count = int(train_share * ratings_count)
@@ -78,6 +82,9 @@ class Trainset:
         self._users_ratings = users_ratings
         self._items_ratings = items_ratings
 
+        self._users_count = len(users_ratings)
+        self._items_count = len(items_ratings)
+
     @classmethod
     def build_from_ratings(cls, ratings):
         users_ratings = defaultdict(list)
@@ -96,3 +103,11 @@ class Trainset:
     @property
     def items_ratings(self):
         return self._items_ratings
+
+    @property
+    def users_count(self):
+        return self._users_count
+
+    @property
+    def items_count(self):
+        return self._items_count
