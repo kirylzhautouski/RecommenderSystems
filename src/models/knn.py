@@ -64,6 +64,10 @@ class NotEnoughNeighbours(Exception):
 
 
 class KNN:
+    # TODO: support different options, in particular:
+    # user-based and item-based recommendations
+    # weightened averages for predictions
+
     def fit(self, trainset, options=None):
         '''
         Builds similarities matrix on given train_set according to options
