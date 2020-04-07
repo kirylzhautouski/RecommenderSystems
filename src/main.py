@@ -1,5 +1,5 @@
 from models.utils import Dataset
-from models.knn import KNN
+from models.knn import KNN, SimilarityMetrics
 
 
 if __name__ == '__main__':

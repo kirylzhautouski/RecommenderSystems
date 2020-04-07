@@ -56,7 +56,23 @@ class SimilarityMetrics:
 
     @staticmethod
     def euclidean(ratings, entities_for_similarities_count):
-        pass
+        similaritities_matrix = np.zeros((entities_for_similarities_count,
+                                         entities_for_similarities_count),
+                                         dtype=float)
+
+        for y, y_ratings in ratings.items():
+            for xi, ri in y_ratings:
+                for xj, rj in y_ratings:
+                    similaritities_matrix[xi, xj] += (ri - rj) ** 2
+
+        similaritities_matrix = np.sqrt(similaritities_matrix)
+
+        for i in range(entities_for_similarities_count):
+            for j in range(entities_for_similarities_count):
+                if similaritities_matrix[i, j] != 0 or i == j:
+                    similaritities_matrix[i, j] = 1 / similaritities_matrix[i, j]
+
+        return similaritities_matrix
 
 
 class InvalidOptions(Exception):
@@ -138,7 +154,7 @@ class KNN:
         # find average for theirs ratings to the item_id
         ratings_for_entity = self._ratings[y]
         neighbours = [(rating, neighbours_similarities[neighbour_id])
-                      for neighbour_id, rating in ratings_for_entity]
+                      for neighbour_id, rating in ratings_for_entity if neighbour_id != x]
 
         k_nearest_neighbours = heapq.nlargest(self._k, neighbours, lambda a: a[1])
         if len(k_nearest_neighbours) != self._k:
