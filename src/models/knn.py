@@ -54,6 +54,14 @@ class SimilarityMetrics:
 
         return similaritities_matrix
 
+    @staticmethod
+    def euclidean(ratings, entities_for_similarities_count):
+        pass
+
+
+class InvalidOptions(Exception):
+    pass
+
 
 class UnfittedModelError(Exception):
     pass
@@ -64,9 +72,6 @@ class NotEnoughNeighbours(Exception):
 
 
 class KNN:
-    # TODO: support different options, in particular:
-    # user-based and item-based recommendations
-    # weightened averages for predictions
 
     def fit(self, trainset, options=None):
         '''
@@ -83,36 +88,60 @@ class KNN:
 
         'similarity_metric' = {'euclidean'|'cosine'}
 
-        'rating_prediction' = {'average'|'weighted_average'}
-
         'similarity_on' = {'user_based'|'item_based'}
 
         'k' = `int`, default=30
         '''
-        self._k = 30
+        defaults = {
+            'similarity_metric': 'cosine',
+            'k': 30,
+            'similarity_on': 'user_based',
+        }
+        if options:
+            defaults.update(options)
 
         self._trainset = trainset
+        self._k = defaults['k']
 
-        self._sim = SimilarityMetrics.cosine(trainset.items_ratings, trainset.users_count)
+        if defaults['similarity_on'] == 'user_based':
+            self._user_based = True
+            self._ratings = trainset.items_ratings
+            entities_for_similarities_count = trainset.users_count
+        elif defaults['similarity_on'] == 'item_based':
+            self._user_based = False
+            self._ratings = trainset.users_ratings
+            entities_for_similarities_count = trainset.items_count
+        else:
+            raise InvalidOptions(f'Invalid similarity on option: {defaults["similarity_on"]}')
 
-    def predict(self, user_id, item_id):
-        inner_user_id = self._trainset.to_inner_user_id(user_id)
-        inner_item_id = self._trainset.to_inner_item_id(item_id)
+        if defaults['similarity_metric'] == 'euclidean':
+            self._sim = SimilarityMetrics.euclidean(self._ratings, entities_for_similarities_count)
+        elif defaults['similarity_metric'] == 'cosine':
+            self._sim = SimilarityMetrics.cosine(self._ratings, entities_for_similarities_count)
+        else:
+            raise InvalidOptions(f'Invalid similarity metric: {defaults["similarity_metric"]}')
+
+    def predict(self, user_id, item_id, weightened_average=False):
+        x = self._trainset.to_inner_user_id(user_id)
+        y = self._trainset.to_inner_item_id(item_id)
+
+        if not self._user_based:
+            x, y = y, x
 
         try:
-            neighbours_similarities = self._sim[inner_user_id]
+            neighbours_similarities = self._sim[x]
         except AttributeError:
             raise UnfittedModelError('You should first call KNN.fit() method '
                                      'to prepare model')
 
         # find k most similar users to inner_user_id
         # find average for theirs ratings to the item_id
-        ratings_for_item = self._trainset.items_ratings[inner_item_id]
+        ratings_for_entity = self._ratings[y]
         neighbours = [(rating, neighbours_similarities[neighbour_id])
-                      for neighbour_id, rating in ratings_for_item]
+                      for neighbour_id, rating in ratings_for_entity]
 
-        k_nearest_neighbours = heapq.nlargest(self._k, neighbours, lambda x: x[1])
+        k_nearest_neighbours = heapq.nlargest(self._k, neighbours, lambda a: a[1])
         if len(k_nearest_neighbours) != self._k:
             raise NotEnoughNeighbours(f'There are less than {self._k} neighbours')
 
-        return np.average(list(map(lambda x: x[0], k_nearest_neighbours)))
+        return np.average(list(map(lambda a: a[0], k_nearest_neighbours)))
