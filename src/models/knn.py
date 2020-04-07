@@ -144,4 +144,8 @@ class KNN:
         if len(k_nearest_neighbours) != self._k:
             raise NotEnoughNeighbours(f'There are less than {self._k} neighbours')
 
-        return np.average(list(map(lambda a: a[0], k_nearest_neighbours)))
+        if weightened_average:
+            return np.average(list(map(lambda a: a[0], k_nearest_neighbours)),
+                              weights=list(map(lambda a: a[1], k_nearest_neighbours)))
+        else:
+            return np.average(list(map(lambda a: a[0], k_nearest_neighbours)))

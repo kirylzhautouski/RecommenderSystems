@@ -8,7 +8,5 @@ if __name__ == '__main__':
     trainset, testset = dataset.split_into_train_and_test_sets(0.7)
 
     knn = KNN()
-    knn.fit(trainset, {
-        'similarity_on': 'item_based',
-    })
+    knn.fit(trainset)
     print(knn.predict(1, 1))
