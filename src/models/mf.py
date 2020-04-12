@@ -1,9 +1,24 @@
 import pandas as pd
 import numpy as np
+import torch
+import torch.nn as nn
 
 
-class MF:
-    pass
+class MF(nn.Module):
+
+    def __init__(self, users_count, items_count, features_count):
+        super().__init__()
+
+        self.users_emb = nn.Embedding(users_count, features_count)
+        self.items_emb = nn.Embedding(items_count, features_count)
+
+        self.users_emb.weight.data.uniform_(0, 0.05)
+        self.items_emb.weight.data.uniform_(0, 0.05)
+
+    def forward(self, u, v):
+        u = self.users_emb(u)
+        v = self.items_emb(v)
+        return (u * v).sum(1)
 
 
 def convert_ids(column, train_column=None):
