@@ -2,6 +2,7 @@ import pandas as pd
 import numpy as np
 import torch
 import torch.nn as nn
+import torch.nn.functional as nnf
 
 
 class MF(nn.Module):
@@ -38,8 +39,40 @@ def encode_data(df, train=None):
         if train is not None:
             train_column = train[column_name]
         _, col, _ = convert_ids(df[column_name], train_column)
+        df[column_name] = col
         df = df[df[column_name] >= 0]
     return df
+
+
+def test_loss(model, test_data):
+    model.eval()
+
+    users = torch.LongTensor(test_data['userId'].values)
+    items = torch.LongTensor(test_data['movieId'].values)
+    ratings = torch.FloatTensor(test_data['rating'].values)
+
+    y_hat = model(users, items)
+    loss = nnf.mse_loss(y_hat, ratings)
+
+    print(f'Test loss: {loss.item()}')
+
+
+def train_model(model, train_data, epochs=10, learning_rate=0.01, weight_decay=0.0):
+    optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate, weight_decay=weight_decay)
+    model.train()
+
+    for i in range(epochs):
+        users = torch.LongTensor(train_data['userId'].values)
+        items = torch.LongTensor(train_data['movieId'].values)
+        ratings = torch.FloatTensor(train_data['rating'].values)
+
+        y_hat = model(users, items)
+
+        loss = nnf.mse_loss(y_hat, ratings)
+        optimizer.zero_grad()
+        loss.backward()
+        optimizer.step()
+        print(loss.item())
 
 
 if __name__ == "__main__":
@@ -53,4 +86,18 @@ if __name__ == "__main__":
     train_encoded = encode_data(train)
     test_encoded = encode_data(test, train)
 
-    print(test_encoded.head())
+    users_count = len(train_encoded['userId'].unique())
+    items_count = len(train_encoded['movieId'].unique())
+
+    model = MF(users_count, items_count, 100)
+    train_model(model, train_encoded, 10, 0.1)
+    test_loss(model, test_encoded)
+    print()
+
+    train_model(model, train_encoded, 15, 0.01)
+    test_loss(model, test_encoded)
+    print()
+
+    train_model(model, train_encoded, 15, 0.01)
+    test_loss(model, test_encoded)
+    print()
