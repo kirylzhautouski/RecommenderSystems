@@ -1,3 +1,5 @@
+from matplotlib import pyplot as plt
+
 import pandas as pd
 import numpy as np
 import torch
@@ -44,6 +46,18 @@ def encode_data(df, train=None):
     return df
 
 
+def show_losses_plot(train_losses, test_losses):
+    plt.title('Mean squared error')
+    plt.xlabel('number of epochs')
+    plt.ylabel('loss')
+
+    plt.plot(range(len(train_losses)), train_losses, label='Train losses')
+    plt.scatter(list(map(lambda x: x[0], test_losses)), list(map(lambda x: x[1], test_losses)), c=[[1, 0, 0]], label='Test losses')
+
+    plt.legend()
+    plt.show()
+
+
 def test_loss(model, test_data):
     model.eval()
 
@@ -54,12 +68,14 @@ def test_loss(model, test_data):
     y_hat = model(users, items)
     loss = nnf.mse_loss(y_hat, ratings)
 
-    print(f'Test loss: {loss.item()}')
+    return loss
 
 
 def train_model(model, train_data, epochs=10, learning_rate=0.01, weight_decay=0.0):
     optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate, weight_decay=weight_decay)
     model.train()
+
+    train_losses = []
 
     for i in range(epochs):
         users = torch.LongTensor(train_data['userId'].values)
@@ -72,7 +88,10 @@ def train_model(model, train_data, epochs=10, learning_rate=0.01, weight_decay=0
         optimizer.zero_grad()
         loss.backward()
         optimizer.step()
-        print(loss.item())
+
+        train_losses.append(loss.item())
+
+    return train_losses
 
 
 if __name__ == "__main__":
@@ -90,14 +109,23 @@ if __name__ == "__main__":
     items_count = len(train_encoded['movieId'].unique())
 
     model = MF(users_count, items_count, 100)
-    train_model(model, train_encoded, 10, 0.1)
-    test_loss(model, test_encoded)
+    loss = test_loss(model, test_encoded)
+    print(f'Test loss: {loss.item()}')
     print()
 
-    train_model(model, train_encoded, 15, 0.01)
-    test_loss(model, test_encoded)
-    print()
+    epochs = [10, 15, 15]
+    learning_rates = [0.1, 0.01, 0.01]
+    test_losses = [(0, loss.item())]
+    all_train_losses = []
 
-    train_model(model, train_encoded, 15, 0.01)
-    test_loss(model, test_encoded)
-    print()
+    for i, epoch_count in enumerate(epochs):
+        train_losses = train_model(model, train_encoded, epoch_count, learning_rates[i])
+        all_train_losses.extend(train_losses)
+
+        loss = test_loss(model, test_encoded)
+        print(f'Test loss: {loss.item()}')
+        print()
+
+        test_losses.append((sum(epochs[:i + 1]), loss.item()))
+
+    show_losses_plot(all_train_losses, test_losses)
