@@ -113,8 +113,8 @@ if __name__ == "__main__":
     print(f'Test loss: {loss.item()}')
     print()
 
-    epochs = [10, 15, 15]
-    learning_rates = [0.1, 0.01, 0.01]
+    epochs = [10, 15, 15, 15]
+    learning_rates = [0.1, 0.01, 0.01, 0.01]
     test_losses = [(0, loss.item())]
     all_train_losses = []
 
